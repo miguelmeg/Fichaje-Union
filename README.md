@@ -1,0 +1,997 @@
+        // Actualizar tabla de registros
+        function updateRecordsTable() {<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Fichaje - Control de Empleados</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="40" r="3" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="80" r="1" fill="rgba(255,255,255,0.1)"/></svg>');
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .section:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            color: #333;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title::before {
+            content: '⏱️';
+            font-size: 1.2em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #fafafa;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+            background: white;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            color: #333;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .employee-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .employee-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .employee-card:hover {
+            transform: scale(1.02);
+        }
+
+        .employee-name {
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .employee-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ff6b6b;
+        }
+
+        .status-indicator.active {
+            background: #4ecdc4;
+            box-shadow: 0 0 10px rgba(78, 205, 196, 0.5);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .records-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .records-table th,
+        .records-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .records-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+        }
+
+        .records-table tr:hover {
+            background: #f8f9ff;
+        }
+
+        .alert {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 10px;
+            border-left: 5px solid;
+            animation: slideIn 0.3s ease;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(-20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .current-time {
+            text-align: center;
+            font-size: 1.8em;
+            font-weight: 300;
+            color: #666;
+            margin: 20px 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            border-radius: 15px;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                flex-direction: column;
+            }
+            
+            .employee-list {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+            }
+        }
+
+        .floating-elements {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .floating-circle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            animation: floatAround 20s infinite linear;
+        }
+    </style>
+</head>
+<body>
+    <div class="floating-elements">
+        <div class="floating-circle" style="width: 60px; height: 60px; top: 20%; left: 10%; animation-delay: -5s;"></div>
+        <div class="floating-circle" style="width: 80px; height: 80px; top: 60%; right: 15%; animation-delay: -15s;"></div>
+        <div class="floating-circle" style="width: 40px; height: 40px; top: 80%; left: 70%; animation-delay: -10s;"></div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>Sistema de Fichaje</h1>
+            <p>Control de Entrada y Salida de Empleados</p>
+        </div>
+
+        <div class="main-content" id="loginSection">
+            <div class="section" style="max-width: 500px; margin: 50px auto;">
+                <h2 class="section-title" style="text-align: center;">🔐 Iniciar Sesión</h2>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="loginSelect">Seleccionar Usuario:</label>
+                        <select id="loginSelect" class="form-control" required>
+                            <option value="">Selecciona tu usuario</option>
+                            <option value="MG001">Miguel García</option>
+                            <option value="LM002">Laura Morata</option>
+                            <option value="NI003">Nines</option>
+                            <option value="FA004">Fátima</option>
+                            <option value="IG005">Ignacio</option>
+                            <option value="NE006">Nerea</option>
+                            <option value="LA007">Laura Asesoría</option>
+                            <option value="AL008">Alfonso</option>
+                            <option value="ADMIN">👑 Administrador</option>
+                        </select>
+                    </div>
+                    <div style="text-align: center; margin-top: 30px;">
+                        <button type="submit" class="btn btn-primary" style="padding: 15px 40px; font-size: 18px;">
+                            🚪 Entrar al Sistema
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="main-content" id="mainSystem" style="display: none;">
+            <div class="current-time" id="currentTime"></div>
+
+            <div class="section" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2 style="margin: 0; color: white;">¡Hola, <span id="currentUserName"></span>!</h2>
+                        <p style="margin: 5px 0 0 0; opacity: 0.9;">Bienvenido al sistema de fichaje</p>
+                    </div>
+                    <button onclick="logout()" class="btn" style="background: rgba(255,255,255,0.2); color: white; border: 2px solid rgba(255,255,255,0.3);">
+                        🚪 Cerrar Sesión
+                    </button>
+                </div>
+            </div>
+
+            <div id="alertContainer"></div>
+
+
+
+            <!-- Fichaje Personal -->
+            <div class="section" id="personalTimesheetSection">
+                <h2 class="section-title">Mi Fichaje</h2>
+                <div id="personalEmployeeCard"></div>
+                
+                <form id="personalCheckForm" style="margin-top: 30px;">
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 1;">
+                            <label for="personalActionType">Acción:</label>
+                            <select id="personalActionType" class="form-control" required>
+                                <option value="">Seleccionar acción</option>
+                                <option value="entrada">Entrada</option>
+                                <option value="salida">Salida</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="personalDate">Fecha:</label>
+                            <input type="date" id="personalDate" class="form-control" required>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="personalTime">Hora:</label>
+                            <input type="time" id="personalTime" class="form-control" required>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 15px; margin-top: 15px;">
+                        <button type="submit" class="btn btn-success">
+                            ⏰ Registrar Mi Fichaje
+                        </button>
+                        <button type="button" onclick="setPersonalCurrentDateTime()" class="btn btn-secondary">
+                            🕒 Usar Hora Actual
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Panel de Administrador -->
+            <div class="section" id="adminSection" style="display: none;">
+                <h2 class="section-title">👑 Panel de Administrador</h2>
+                <form id="adminCheckForm">
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 1;">
+                            <label for="adminEmployeeSelect">Seleccionar Empleado:</label>
+                            <select id="adminEmployeeSelect" class="form-control" required>
+                                <option value="">Seleccionar empleado</option>
+                                <option value="MG001">Miguel García (MG001)</option>
+                                <option value="LM002">Laura Morata (LM002)</option>
+                                <option value="NI003">Nines (NI003)</option>
+                                <option value="FA004">Fátima (FA004)</option>
+                                <option value="IG005">Ignacio (IG005)</option>
+                                <option value="NE006">Nerea (NE006)</option>
+                                <option value="LA007">Laura Asesoría (LA007)</option>
+                                <option value="AL008">Alfonso (AL008)</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="adminActionType">Acción:</label>
+                            <select id="adminActionType" class="form-control" required>
+                                <option value="">Seleccionar acción</option>
+                                <option value="entrada">Entrada</option>
+                                <option value="salida">Salida</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 1;">
+                            <label for="adminDate">Fecha:</label>
+                            <input type="date" id="adminDate" class="form-control" required>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="adminTime">Hora:</label>
+                            <input type="time" id="adminTime" class="form-control" required>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 15px; margin-top: 15px;">
+                        <button type="submit" class="btn btn-success">
+                            ⏰ Registrar Fichaje (Admin)
+                        </button>
+                        <button type="button" onclick="setAdminCurrentDateTime()" class="btn btn-secondary">
+                            🕒 Usar Hora Actual
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Lista de Empleados (Solo Admin) -->
+            <div class="section" id="employeeListSection" style="display: none;">
+                <h2 class="section-title">Empleados Registrados</h2>
+                <div id="employeeList" class="employee-list"></div>
+            </div>
+
+            <!-- Registros -->
+            <div class="section">
+                <h2 class="section-title" id="recordsTitle">Mis Registros de Fichaje</h2>
+                <div style="margin-bottom: 20px;" id="recordsActions">
+                    <button onclick="exportToExcel()" class="btn btn-secondary">
+                        📊 Exportar a Excel
+                    </button>
+                    <button onclick="clearAllRecords()" class="btn btn-danger" id="clearRecordsBtn" style="display: none;">
+                        🗑️ Limpiar Registros
+                    </button>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="records-table" id="recordsTable">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Hora</th>
+                                <th>ID Empleado</th>
+                                <th>Nombre</th>
+                                <th>Acción</th>
+                                <th>Departamento</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recordsTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        @keyframes floatAround {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(120deg); }
+            66% { transform: translate(-20px, 20px) rotate(240deg); }
+            100% { transform: translate(0, 0) rotate(360deg); }
+        }
+    </style>
+
+    <script>
+        // Sistema de almacenamiento en memoria
+        let employees = {
+            'MG001': {
+                name: 'Miguel García',
+                id: 'MG001',
+                department: 'Administración',
+                position: 'Empleado',
+                registeredAt: new Date()
+            },
+            'LM002': {
+                name: 'Laura Morata',
+                id: 'LM002',
+                department: 'Administración',
+                position: 'Empleado',
+                registeredAt: new Date()
+            },
+            'NI003': {
+                name: 'Nines',
+                id: 'NI003',
+                department: 'Administración',
+                position: 'Empleado',
+                registeredAt: new Date()
+            },
+            'FA004': {
+                name: 'Fátima',
+                id: 'FA004',
+                department: 'Administración',
+                position: 'Empleado',
+                registeredAt: new Date()
+            },
+            'IG005': {
+                name: 'Ignacio',
+                id: 'IG005',
+                department: 'Administración',
+                position: 'Empleado',
+                registeredAt: new Date()
+            },
+            'NE006': {
+                name: 'Nerea',
+                id: 'NE006',
+                department: 'Administración',
+                position: 'Empleado',
+                registeredAt: new Date()
+            },
+            'LA007': {
+                name: 'Laura Asesoría',
+                id: 'LA007',
+                department: 'Asesoría',
+                position: 'Asesora',
+                registeredAt: new Date()
+            },
+            'AL008': {
+                name: 'Alfonso',
+                id: 'AL008',
+                department: 'Administración',
+                position: 'Empleado',
+                registeredAt: new Date()
+            }
+        };
+        let timeRecords = [];
+        let employeeStatus = {
+            'MG001': 'out',
+            'LM002': 'out',
+            'NI003': 'out',
+            'FA004': 'out',
+            'IG005': 'out',
+            'NE006': 'out',
+            'LA007': 'out',
+            'AL008': 'out'
+        }; // Para tracking de entrada/salida
+
+        // Sistema de usuario logueado
+        let currentUser = null;
+        let isAdmin = false;
+
+        // Login del sistema
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const selectedUser = document.getElementById('loginSelect').value;
+            
+            if (selectedUser === 'ADMIN') {
+                currentUser = 'ADMIN';
+                isAdmin = true;
+                document.getElementById('currentUserName').textContent = 'Administrador';
+                showAdminInterface();
+            } else {
+                currentUser = selectedUser;
+                isAdmin = false;
+                document.getElementById('currentUserName').textContent = employees[selectedUser].name;
+                showUserInterface();
+            }
+            
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('mainSystem').style.display = 'block';
+            
+            showAlert(`¡Bienvenido al sistema, ${isAdmin ? 'Administrador' : employees[selectedUser].name}!`);
+            updateInterface();
+        });
+
+        // Mostrar interfaz de admin
+        function showAdminInterface() {
+            document.getElementById('personalTimesheetSection').style.display = 'none';
+            document.getElementById('adminSection').style.display = 'block';
+            document.getElementById('employeeListSection').style.display = 'block';
+            document.getElementById('recordsTitle').textContent = 'Todos los Registros de Fichaje';
+            document.getElementById('clearRecordsBtn').style.display = 'inline-block';
+        }
+
+        // Mostrar interfaz de usuario
+        function showUserInterface() {
+            document.getElementById('personalTimesheetSection').style.display = 'block';
+            document.getElementById('adminSection').style.display = 'none';
+            document.getElementById('employeeListSection').style.display = 'none';
+            document.getElementById('recordsTitle').textContent = 'Mis Registros de Fichaje';
+            document.getElementById('clearRecordsBtn').style.display = 'none';
+            
+            // Mostrar tarjeta personal
+            updatePersonalCard();
+        }
+
+        // Actualizar tarjeta personal
+        function updatePersonalCard() {
+            if (!currentUser || isAdmin) return;
+            
+            const employee = employees[currentUser];
+            const isActive = employeeStatus[currentUser] === 'in';
+            
+            document.getElementById('personalEmployeeCard').innerHTML = `
+                <div class="employee-card" style="max-width: 400px; margin: 0 auto;">
+                    <div class="employee-name" style="font-size: 1.3em;">${employee.name}</div>
+                    <div class="employee-status">
+                        <div class="status-indicator ${isActive ? 'active' : ''}"></div>
+                        <span style="font-size: 1.1em;">${isActive ? 'En oficina' : 'Fuera de oficina'}</span>
+                    </div>
+                    <div style="font-size: 1em; margin-bottom: 15px;">
+                        <div><strong>ID:</strong> ${employee.id}</div>
+                        <div><strong>Departamento:</strong> ${employee.department}</div>
+                        <div><strong>Cargo:</strong> ${employee.position}</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <button onclick="quickPersonalCheckIn()" class="btn btn-success" style="font-size: 1.1em; padding: 15px 30px;">
+                            ${isActive ? '🚪 Registrar Salida' : '🏢 Registrar Entrada'}
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Fichaje rápido personal
+        function quickPersonalCheckIn() {
+            const currentStatus = employeeStatus[currentUser] || 'out';
+            const action = currentStatus === 'out' ? 'entrada' : 'salida';
+            recordTimeEntry(currentUser, action);
+        }
+
+        // Cerrar sesión
+        function logout() {
+            currentUser = null;
+            isAdmin = false;
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('mainSystem').style.display = 'none';
+            document.getElementById('loginSelect').value = '';
+            showAlert('Sesión cerrada exitosamente');
+        }
+
+        // Actualizar reloj
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleString('es-ES', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('currentTime').textContent = timeString;
+        }
+
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Mostrar alertas
+        function showAlert(message, type = 'success') {
+            const alertContainer = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            alertContainer.appendChild(alert);
+
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
+
+
+
+        // Establecer fecha y hora actual para formulario personal
+        function setPersonalCurrentDateTime() {
+            const now = new Date();
+            const dateStr = now.toISOString().split('T')[0];
+            const timeStr = now.toTimeString().split(' ')[0].substring(0, 5);
+            
+            document.getElementById('personalDate').value = dateStr;
+            document.getElementById('personalTime').value = timeStr;
+        }
+
+        // Establecer fecha y hora actual para formulario admin
+        function setAdminCurrentDateTime() {
+            const now = new Date();
+            const dateStr = now.toISOString().split('T')[0];
+            const timeStr = now.toTimeString().split(' ')[0].substring(0, 5);
+            
+            document.getElementById('adminDate').value = dateStr;
+            document.getElementById('adminTime').value = timeStr;
+        }
+
+        // Fichaje personal
+        document.getElementById('personalCheckForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            if (!currentUser || isAdmin) return;
+            
+            const action = document.getElementById('personalActionType').value;
+            const date = document.getElementById('personalDate').value;
+            const time = document.getElementById('personalTime').value;
+
+            recordTimeEntryManual(currentUser, action, date, time);
+            this.reset();
+            setPersonalCurrentDateTime();
+        });
+
+        // Fichaje admin
+        document.getElementById('adminCheckForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            if (!isAdmin) return;
+            
+            const employeeId = document.getElementById('adminEmployeeSelect').value;
+            const action = document.getElementById('adminActionType').value;
+            const date = document.getElementById('adminDate').value;
+            const time = document.getElementById('adminTime').value;
+
+            if (!employees[employeeId]) {
+                showAlert('Empleado no encontrado', 'error');
+                return;
+            }
+
+            recordTimeEntryManual(employeeId, action, date, time);
+            this.reset();
+            setAdminCurrentDateTime();
+        });
+
+        // Registrar entrada/salida con hora manual
+        function recordTimeEntryManual(employeeId, action, manualDate, manualTime) {
+            const employee = employees[employeeId];
+            
+            // Crear fecha completa con la fecha y hora proporcionadas
+            const customDateTime = new Date(`${manualDate}T${manualTime}:00`);
+            
+            const record = {
+                date: customDateTime.toLocaleDateString('es-ES'),
+                time: customDateTime.toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}),
+                employeeId: employeeId,
+                employeeName: employee.name,
+                action: action,
+                department: employee.department,
+                timestamp: customDateTime
+            };
+
+            timeRecords.push(record);
+            employeeStatus[employeeId] = action === 'entrada' ? 'in' : 'out';
+            
+            showAlert(`${action.charAt(0).toUpperCase() + action.slice(1)} registrada para ${employee.name} el ${record.date} a las ${record.time}`);
+            updateInterface();
+        }
+
+        // Registrar entrada/salida (para fichaje rápido)
+        function recordTimeEntry(employeeId, action) {
+            const employee = employees[employeeId];
+            const now = new Date();
+            
+            const record = {
+                date: now.toLocaleDateString('es-ES'),
+                time: now.toLocaleTimeString('es-ES'),
+                employeeId: employeeId,
+                employeeName: employee.name,
+                action: action,
+                department: employee.department,
+                timestamp: now
+            };
+
+            timeRecords.push(record);
+            employeeStatus[employeeId] = action === 'entrada' ? 'in' : 'out';
+            
+            showAlert(`${action.charAt(0).toUpperCase() + action.slice(1)} registrada para ${employee.name}`);
+            updateInterface();
+        }
+
+        // Actualizar interfaz completa
+        function updateInterface() {
+            updateRecordsTable();
+            if (isAdmin) {
+                updateEmployeeList();
+            } else {
+                updatePersonalCard();
+            }
+        }
+
+        // Fichaje rápido desde tarjeta de empleado
+        function quickCheckIn(employeeId) {
+            const currentStatus = employeeStatus[employeeId] || 'out';
+            const action = currentStatus === 'out' ? 'entrada' : 'salida';
+            recordTimeEntry(employeeId, action);
+        }
+
+        // Actualizar lista de empleados
+        function updateEmployeeList() {
+            const container = document.getElementById('employeeList');
+            container.innerHTML = '';
+
+            Object.values(employees).forEach(employee => {
+                const isActive = employeeStatus[employee.id] === 'in';
+                
+                const card = document.createElement('div');
+                card.className = 'employee-card';
+                card.innerHTML = `
+                    <div class="employee-name">${employee.name}</div>
+                    <div class="employee-status">
+                        <div class="status-indicator ${isActive ? 'active' : ''}"></div>
+                        <span>${isActive ? 'En oficina' : 'Fuera de oficina'}</span>
+                    </div>
+                    <div style="font-size: 0.9em; margin-bottom: 15px;">
+                        <div><strong>ID:</strong> ${employee.id}</div>
+                        <div><strong>Departamento:</strong> ${employee.department}</div>
+                        <div><strong>Cargo:</strong> ${employee.position}</div>
+                    </div>
+                    <div class="action-buttons">
+                        <button onclick="quickCheckIn('${employee.id}')" class="btn btn-success" style="flex: 1; font-size: 0.9em;">
+                            ${isActive ? '🚪 Salida' : '🏢 Entrada'}
+                        </button>
+                        <button onclick="deleteEmployee('${employee.id}')" class="btn btn-danger" style="flex: 0 0 auto; font-size: 0.9em;">
+                            🗑️
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            if (Object.keys(employees).length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666; font-style: italic;">No hay empleados registrados</p>';
+            }
+        }
+
+        // Eliminar empleado
+        function deleteEmployee(employeeId) {
+            if (confirm('¿Está seguro de que desea eliminar este empleado?')) {
+                delete employees[employeeId];
+                delete employeeStatus[employeeId];
+                
+                // Filtrar registros del empleado eliminado
+                timeRecords = timeRecords.filter(record => record.employeeId !== employeeId);
+                
+                showAlert('Empleado eliminado exitosamente');
+                updateEmployeeList();
+                updateRecordsTable();
+            }
+        }
+
+        // Actualizar tabla de registros
+        function updateRecordsTable() {
+            const tbody = document.getElementById('recordsTableBody');
+            tbody.innerHTML = '';
+
+            // Ordenar por fecha más reciente
+            const sortedRecords = [...timeRecords].sort((a, b) => b.timestamp - a.timestamp);
+
+            sortedRecords.forEach(record => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${record.date}</td>
+                    <td>${record.time}</td>
+                    <td>${record.employeeId}</td>
+                    <td>${record.employeeName}</td>
+                    <td>
+                        <span style="
+                            padding: 4px 12px; 
+                            border-radius: 20px; 
+                            font-size: 0.85em; 
+                            font-weight: 600;
+                            color: white;
+                            background: ${record.action === 'entrada' ? '#28a745' : '#dc3545'};
+                        ">
+                            ${record.action.charAt(0).toUpperCase() + record.action.slice(1)}
+                        </span>
+                    </td>
+                    <td>${record.department}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            if (timeRecords.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #666; font-style: italic;">No hay registros de fichaje</td></tr>';
+            }
+        }
+
+        // Exportar a Excel
+        function exportToExcel() {
+            if (timeRecords.length === 0) {
+                showAlert('No hay datos para exportar', 'error');
+                return;
+            }
+
+            const ws_data = [
+                ['Fecha', 'Hora', 'ID Empleado', 'Nombre', 'Acción', 'Departamento', 'Cargo']
+            ];
+
+            timeRecords.forEach(record => {
+                const employee = employees[record.employeeId];
+                ws_data.push([
+                    record.date,
+                    record.time,
+                    record.employeeId,
+                    record.employeeName,
+                    record.action,
+                    record.department,
+                    employee ? employee.position : 'N/A'
+                ]);
+            });
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
+            
+            // Ajustar ancho de columnas
+            ws['!cols'] = [
+                {wch: 12}, // Fecha
+                {wch: 10}, // Hora
+                {wch: 12}, // ID Empleado
+                {wch: 25}, // Nombre
+                {wch: 10}, // Acción
+                {wch: 15}, // Departamento
+                {wch: 20}  // Cargo
+            ];
+
+            XLSX.utils.book_append_sheet(wb, ws, "Registros de Fichaje");
+            
+            const fecha = new Date().toISOString().split('T')[0];
+            XLSX.writeFile(wb, `Fichaje_Empleados_${fecha}.xlsx`);
+            
+            showAlert('Archivo Excel exportado exitosamente');
+        }
+
+        // Limpiar todos los registros
+        function clearAllRecords() {
+            if (confirm('¿Está seguro de que desea eliminar todos los registros de fichaje?')) {
+                timeRecords = [];
+                // Resetear estados de empleados
+                Object.keys(employeeStatus).forEach(id => {
+                    employeeStatus[id] = 'out';
+                });
+                updateRecordsTable();
+                updateEmployeeList();
+                showAlert('Todos los registros han sido eliminados');
+            }
+        }
+
+        // Inicialización
+        updateEmployeeList();
+        updateRecordsTable();
+        setCurrentDateTime(); // Establecer fecha y hora actual por defecto
+    </script>
+</body>
+</html>
